@@ -89,7 +89,8 @@ class Span(object):
             # be defensive so we don't die if start isn't set
             self.duration = ft - (self.start or ft)
 
-        self.set_traceback()
+        if self.error == 0:
+            self.set_traceback()
 
         if self._tracer:
             self._tracer.record(self)

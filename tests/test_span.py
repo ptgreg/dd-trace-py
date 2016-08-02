@@ -77,6 +77,7 @@ def test_finish():
         assert s is s1
         time.sleep(sleep)
     assert s.duration >= sleep, "%s < %s" % (s.duration, sleep)
+    assert s.error is 0
     eq_(s, dt.last_span)
 
     # ensure finish works with no tracer
@@ -102,6 +103,18 @@ def test_finish_set_span_duration():
     s.duration = 1337.0
     s.finish()
     assert dt.last_span.duration == 1337.0
+
+def test_finish_set_error():
+    s = Span(None, 'foo')
+    try:
+        raise Exception('bim')
+    except:
+        pass
+    finally:
+        s.finish()
+
+    eq_(s.error, 1)
+    eq_(s.to_dict()['meta'][errors.ERROR_MSG], 'bim')
 
 def test_traceback_with_error():
     s = Span(None, "foo")

@@ -89,6 +89,8 @@ class Span(object):
             # be defensive so we don't die if start isn't set
             self.duration = ft - (self.start or ft)
 
+        self.set_traceback()
+
         if self._tracer:
             self._tracer.record(self)
 
@@ -219,8 +221,7 @@ class Span(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         try:
-            if exc_type:
-                self.set_exc_info(exc_type, exc_val, exc_tb)
+            # exception information is captured in finish()
             self.finish()
         except Exception:
             log.exception("error closing trace")

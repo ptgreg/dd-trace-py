@@ -14,7 +14,7 @@ from flask import Flask
 from redis.exceptions import ConnectionError
 
 # testing
-from ...test_tracer import DummyWriter
+from ...utils import get_test_tracer
 
 
 class FlaskCacheWrapperTest(unittest.TestCase):
@@ -22,9 +22,7 @@ class FlaskCacheWrapperTest(unittest.TestCase):
 
     def test_cache_get_without_arguments(self):
         # initialize the dummy writer
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         # create the TracedCache instance for a Flask app
         Cache = get_traced_cache(tracer, service=self.SERVICE)
@@ -38,7 +36,7 @@ class FlaskCacheWrapperTest(unittest.TestCase):
         # ensure that the error is not caused by our tracer
         ok_("get()" in ex.exception.args[0])
         ok_("argument" in ex.exception.args[0])
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         # an error trace must be sent
         eq_(len(spans), 1)
         span = spans[0]
@@ -50,9 +48,7 @@ class FlaskCacheWrapperTest(unittest.TestCase):
 
     def test_cache_set_without_arguments(self):
         # initialize the dummy writer
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         # create the TracedCache instance for a Flask app
         Cache = get_traced_cache(tracer, service=self.SERVICE)
@@ -66,7 +62,7 @@ class FlaskCacheWrapperTest(unittest.TestCase):
         # ensure that the error is not caused by our tracer
         ok_("set()" in ex.exception.args[0])
         ok_("argument" in ex.exception.args[0])
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         # an error trace must be sent
         eq_(len(spans), 1)
         span = spans[0]
@@ -78,9 +74,7 @@ class FlaskCacheWrapperTest(unittest.TestCase):
 
     def test_cache_add_without_arguments(self):
         # initialize the dummy writer
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         # create the TracedCache instance for a Flask app
         Cache = get_traced_cache(tracer, service=self.SERVICE)
@@ -94,7 +88,7 @@ class FlaskCacheWrapperTest(unittest.TestCase):
         # ensure that the error is not caused by our tracer
         ok_("add()" in ex.exception.args[0])
         ok_("argument" in ex.exception.args[0])
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         # an error trace must be sent
         eq_(len(spans), 1)
         span = spans[0]
@@ -106,9 +100,7 @@ class FlaskCacheWrapperTest(unittest.TestCase):
 
     def test_cache_delete_without_arguments(self):
         # initialize the dummy writer
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         # create the TracedCache instance for a Flask app
         Cache = get_traced_cache(tracer, service=self.SERVICE)
@@ -122,7 +114,7 @@ class FlaskCacheWrapperTest(unittest.TestCase):
         # ensure that the error is not caused by our tracer
         ok_("delete()" in ex.exception.args[0])
         ok_("argument" in ex.exception.args[0])
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         # an error trace must be sent
         eq_(len(spans), 1)
         span = spans[0]
@@ -134,9 +126,7 @@ class FlaskCacheWrapperTest(unittest.TestCase):
 
     def test_cache_set_many_without_arguments(self):
         # initialize the dummy writer
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         # create the TracedCache instance for a Flask app
         Cache = get_traced_cache(tracer, service=self.SERVICE)
@@ -150,7 +140,7 @@ class FlaskCacheWrapperTest(unittest.TestCase):
         # ensure that the error is not caused by our tracer
         ok_("set_many()" in ex.exception.args[0])
         ok_("argument" in ex.exception.args[0])
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         # an error trace must be sent
         eq_(len(spans), 1)
         span = spans[0]
@@ -162,9 +152,7 @@ class FlaskCacheWrapperTest(unittest.TestCase):
 
     def test_redis_cache_tracing_with_a_wrong_connection(self):
         # initialize the dummy writer
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         # create the TracedCache instance for a Flask app
         Cache = get_traced_cache(tracer, service=self.SERVICE)
@@ -181,7 +169,7 @@ class FlaskCacheWrapperTest(unittest.TestCase):
 
         # ensure that the error is not caused by our tracer
         ok_("localhost:22230. Connection refused." in ex.exception.args[0])
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         # an error trace must be sent
         eq_(len(spans), 1)
         span = spans[0]
@@ -196,9 +184,7 @@ class FlaskCacheWrapperTest(unittest.TestCase):
 
     def test_memcached_cache_tracing_with_a_wrong_connection(self):
         # initialize the dummy writer
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         # create the TracedCache instance for a Flask app
         Cache = get_traced_cache(tracer, service=self.SERVICE)
@@ -217,7 +203,7 @@ class FlaskCacheWrapperTest(unittest.TestCase):
 
 
         # ensure that the error is not caused by our tracer
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 1)
         span = spans[0]
         eq_(span.service, self.SERVICE)

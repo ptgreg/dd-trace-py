@@ -13,15 +13,14 @@ from nose.tools import eq_
 from ddtrace import Tracer
 from ddtrace.contrib.flask import TraceMiddleware
 from ddtrace.ext import http, errors
-from ...test_tracer import DummyWriter
+
+from ...utils import get_test_tracer
 
 
 log = logging.getLogger(__name__)
 
 # global writer tracer for the tests.
-writer = DummyWriter()
-tracer = Tracer()
-tracer.writer = writer
+tracer = get_test_tracer()
 
 
 class TestError(Exception):
@@ -76,7 +75,7 @@ def handle_my_exception(e):
 # add tracing to the app (we use a global app to help ensure multiple requests
 # work)
 service = "test.flask.service"
-assert not writer.pop()  # should always be empty
+assert not tracer.writer.pop()  # should always be empty
 traced_app = TraceMiddleware(app, tracer, service=service)
 
 # make the app testable
@@ -88,7 +87,7 @@ class TestFlask(object):
 
     def setUp(self):
         # ensure the last test didn't leave any trash
-        writer.pop()
+        tracer.writer.pop()
 
     def test_child(self):
         start = time.time()
@@ -98,7 +97,7 @@ class TestFlask(object):
         eq_(rv.status_code, 200)
         eq_(rv.data, b'child')
         # ensure trace worked
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 2)
 
         spans_by_name = {s.name:s for s in spans}
@@ -134,7 +133,7 @@ class TestFlask(object):
 
         # ensure trace worked
         assert not tracer.current_span(), tracer.current_span().pprint()
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 1)
         s = spans[0]
         eq_(s.service, service)
@@ -144,7 +143,7 @@ class TestFlask(object):
         eq_(s.error, 0)
         eq_(s.meta.get(http.STATUS_CODE), '200')
 
-        services = writer.pop_services()
+        services = tracer.writer.pop_services()
         expected = {
             service : {"app":"flask", "app_type":"web"}
         }
@@ -161,7 +160,7 @@ class TestFlask(object):
 
         # ensure trace worked
         assert not tracer.current_span(), tracer.current_span().pprint()
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 2)
         by_name = {s.name:s for s in spans}
         s = by_name["flask.request"]
@@ -190,7 +189,7 @@ class TestFlask(object):
 
         # ensure trace worked
         assert not tracer.current_span(), tracer.current_span().pprint()
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 1)
         by_name = {s.name:s for s in spans}
         s = by_name["flask.request"]
@@ -212,7 +211,7 @@ class TestFlask(object):
 
         # ensure the request was traced.
         assert not tracer.current_span()
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 1)
         s = spans[0]
         eq_(s.service, service)
@@ -236,7 +235,7 @@ class TestFlask(object):
 
         # ensure the request was traced.
         assert not tracer.current_span()
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 1)
         s = spans[0]
         eq_(s.service, service)

@@ -4,16 +4,14 @@ from django.test import TestCase
 from django.template import Template
 
 # project
-from ddtrace.tracer import Tracer
 from ddtrace.contrib.django.conf import settings
 
 # testing
-from ...test_tracer import DummyWriter
+from ...utils import get_test_tracer
 
 
 # testing tracer
-tracer = Tracer()
-tracer.writer = DummyWriter()
+tracer = get_test_tracer()
 
 
 class DjangoTraceTestCase(TestCase):

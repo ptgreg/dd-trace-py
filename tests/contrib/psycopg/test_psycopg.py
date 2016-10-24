@@ -11,16 +11,14 @@ from ddtrace.contrib.psycopg import connection_factory
 
 # testing
 from ..config import POSTGRES_CONFIG
-from ...test_tracer import DummyWriter
+from ...utils import get_test_tracer
 
 
 TEST_PORT = str(POSTGRES_CONFIG['port'])
 
 
 def test_wrap():
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     services = ["db", "another"]
     for service in services:
@@ -36,7 +34,7 @@ def test_wrap():
         end = time.time()
         eq_(rows, [('foobarblah',)])
         assert rows
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         assert spans
         eq_(len(spans), 1)
         span = spans[0]
@@ -58,7 +56,7 @@ def test_wrap():
             pass
         else:
             assert 0, "should have an error"
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         assert spans, spans
         eq_(len(spans), 1)
         span = spans[0]
@@ -72,7 +70,7 @@ def test_wrap():
         eq_(span.span_type, "sql")
 
     # ensure we have the service types
-    services = writer.pop_services()
+    services = tracer.writer.pop_services()
     expected = {
         "db" : {"app":"postgres", "app_type":"db"},
         "another" : {"app":"postgres", "app_type":"db"},

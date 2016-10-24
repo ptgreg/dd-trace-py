@@ -13,7 +13,7 @@ from ddtrace.ext import net as netx, cassandra as cassx, errors as errx
 from cassandra.cluster import Cluster
 
 from ..config import CASSANDRA_CONFIG
-from ...test_tracer import DummyWriter
+from ...utils import get_test_tracer
 
 
 class CassandraTest(unittest.TestCase):
@@ -45,11 +45,9 @@ class CassandraTest(unittest.TestCase):
             eq_(r.description, "A cruel mistress")
 
     def _traced_cluster(self):
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
         TracedCluster = get_traced_cassandra(tracer)
-        return TracedCluster, writer
+        return TracedCluster, tracer.writer
 
 
     def test_get_traced_cassandra(self):
@@ -79,14 +77,12 @@ class CassandraTest(unittest.TestCase):
         """
         Tests tracing with a custom service
         """
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
         TracedCluster = get_traced_cassandra(tracer, service="custom")
         session = TracedCluster(port=CASSANDRA_CONFIG['port']).connect(self.TEST_KEYSPACE)
 
         session.execute(self.TEST_QUERY)
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         assert spans
         eq_(len(spans), 1)
         query = spans[0]

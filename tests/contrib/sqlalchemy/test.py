@@ -25,7 +25,7 @@ from ddtrace.ext import net as netx
 
 # testing
 from ..config import POSTGRES_CONFIG
-from ...test_tracer import DummyWriter
+from ...utils import get_test_tracer
 
 
 Base = declarative_base()
@@ -84,8 +84,7 @@ def _test_create_engine(engine_args, service, vendor, expected_meta):
 
 def _test_engine(engine, service, vendor, expected_meta):
     """ a test suite for various sqlalchemy engines. """
-    tracer = Tracer()
-    tracer.writer = DummyWriter()
+    tracer = get_test_tracer()
 
     # create an engine and start tracing.
     trace_engine(engine, tracer, service=service)

@@ -7,16 +7,11 @@ import time
 from nose.tools import assert_raises, eq_
 from unittest.case import SkipTest
 
-from ddtrace import encoding
-from ddtrace.tracer import Tracer
-from ddtrace.writer import AgentWriter
-from ddtrace.transport import ThreadedHTTPTransport
+from .utils import get_test_tracer
 
 
 def test_tracer_vars():
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     # explicit vars
     s = tracer.trace("a", service="s", resource="r", span_type="t")
@@ -33,9 +28,7 @@ def test_tracer_vars():
 
 def test_tracer():
     # add some dummy tracing code.
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
     sleep = 0.05
 
     def _mix():
@@ -54,9 +47,9 @@ def test_tracer():
             _bake()
 
     # let's run it and make sure all is well.
-    assert not writer.spans
+    assert not tracer.writer.spans
     _make_cake()
-    spans = writer.pop()
+    spans = tracer.writer.pop()
     assert spans, "%s" % spans
     eq_(len(spans), 3)
     spans_by_name = {s.name:s for s in spans}
@@ -77,14 +70,12 @@ def test_tracer():
 
     # do it again and make sure it has new trace ids
     _make_cake()
-    spans = writer.pop()
+    spans = tracer.writer.pop()
     for s in spans:
         assert s.trace_id != make.trace_id
 
 def test_tracer_wrap():
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     @tracer.wrap('decorated_function', service='s', resource='r',
             span_type='t')
@@ -94,7 +85,7 @@ def test_tracer_wrap():
         span.set_tag(tag_name, tag_value)
     f('a', 'b')
 
-    spans = writer.pop()
+    spans = tracer.writer.pop()
     eq_(len(spans), 1)
     s = spans[0]
     eq_(s.name, 'decorated_function')
@@ -104,21 +95,17 @@ def test_tracer_wrap():
     eq_(s.to_dict()['meta']['a'], 'b')
 
 def test_tracer_wrap_default_name():
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     @tracer.wrap()
     def f():
         pass
     f()
 
-    eq_(writer.spans[0].name, 'tests.test_tracer.f')
+    eq_(tracer.writer.spans[0].name, 'tests.test_tracer.f')
 
 def test_tracer_wrap_exception():
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     @tracer.wrap()
     def f():
@@ -126,14 +113,12 @@ def test_tracer_wrap_exception():
 
     assert_raises(Exception, f)
 
-    eq_(len(writer.spans), 1)
-    eq_(writer.spans[0].error, 1)
+    eq_(len(tracer.writer.spans), 1)
+    eq_(tracer.writer.spans[0].error, 1)
 
 def test_tracer_wrap_multiple_calls():
     # Make sure that we create a new span each time the function is called
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     @tracer.wrap()
     def f():
@@ -141,15 +126,13 @@ def test_tracer_wrap_multiple_calls():
     f()
     f()
 
-    spans = writer.pop()
+    spans = tracer.writer.pop()
     eq_(len(spans), 2)
     assert spans[0].span_id != spans[1].span_id
 
 def test_tracer_wrap_span_nesting():
     # Make sure that nested spans have the correct parents
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     @tracer.wrap('inner')
     def inner():
@@ -160,7 +143,7 @@ def test_tracer_wrap_span_nesting():
             inner()
     outer()
 
-    spans = writer.pop()
+    spans = tracer.writer.pop()
     eq_(len(spans), 3)
 
     # sift through the list so we're not dependent on span ordering within the
@@ -184,9 +167,7 @@ def test_tracer_wrap_span_nesting():
     eq_(inner_span.parent_id, mid_span.span_id)
 
 def test_tracer_wrap_class():
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     class Foo(object):
 
@@ -209,29 +190,25 @@ def test_tracer_wrap_class():
     eq_(f.c(), 2)
     eq_(f.i(), 3)
 
-    spans = writer.pop()
+    spans = tracer.writer.pop()
     eq_(len(spans), 3)
     names = [s.name for s in spans]
     # FIXME[matt] include the class name here.
     eq_(sorted(names), sorted(["tests.test_tracer.%s" % n for n in ["s", "c", "i"]]))
 
-
-
 def test_tracer_disabled():
     # add some dummy tracing code.
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     tracer.enabled = True
     with tracer.trace("foo") as s:
         s.set_tag("a", "b")
-    assert writer.pop()
+    assert tracer.writer.pop()
 
     tracer.enabled = False
     with tracer.trace("foo") as s:
         s.set_tag("a", "b")
-    assert not writer.pop()
+    assert not tracer.writer.pop()
 
 def test_unserializable_span_with_finish():
     try:
@@ -241,9 +218,7 @@ def test_unserializable_span_with_finish():
 
     # a weird case where manually calling finish with an unserializable
     # span was causing an loop of serialization.
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     with tracer.trace("parent") as span:
         span.metrics['as'] = np.int64(1) # circumvent the data checks
@@ -252,9 +227,7 @@ def test_unserializable_span_with_finish():
 def test_tracer_disabled_mem_leak():
     # ensure that if the tracer is disabled, we still remove things from the
     # span buffer upon finishing.
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     tracer.enabled = False
     s1 = tracer.trace("foo")
@@ -264,47 +237,3 @@ def test_tracer_disabled_mem_leak():
     assert not s2._parent, s2._parent
     s2.finish()
     assert not p1, p1
-
-
-class DummyWriter(AgentWriter):
-    """ DummyWriter is a small fake writer used for tests. not thread-safe. """
-
-    def __init__(self):
-        # original call
-        super(DummyWriter, self).__init__()
-        # dummy components
-        self.spans = []
-        self.services = {}
-        self._reporter.transport = DummyTransport(Tracer.DEFAULT_HOSTNAME, Tracer.DEFAULT_PORT)
-
-    def write(self, spans, services=None):
-        # ensures the writer is called as usual; this includes
-        # the reporter encoding
-        super(DummyWriter, self).write(spans, services=services)
-
-        # simplify for easier retrieval
-        self.spans += spans
-        if services:
-            self.services.update(services)
-
-    def pop(self):
-        # dummy method
-        s = self.spans
-        self.spans = []
-        return s
-
-    def pop_services(self):
-        # dummy method
-        s = self.services
-        self.services = {}
-        return s
-
-class DummyTransport(ThreadedHTTPTransport):
-    """ Fake HTTPTransport for tests. """
-    def send(self, *args, **kwargs):
-        pass
-
-def get_test_tracer():
-    tracer = Tracer()
-    tracer.writer = DummyWriter()
-    return tracer

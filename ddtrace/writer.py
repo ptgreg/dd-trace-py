@@ -13,7 +13,8 @@ class AgentWriter(object):
     """
     Report spans to the Agent API.
     """
-    def __init__(self, hostname='localhost', port=7777, buffer_size=1000, flush_interval=1, service_interval=120):
+    def __init__(self, hostname='localhost', port=7777, buffer_size=1000,
+                 flush_interval=1, service_interval=120):
         self._transport = HTTPTransport(hostname, port)
         self._workers = []
 
@@ -42,7 +43,7 @@ class AgentWriter(object):
         trace_worker = self._workers[0]
         trace_worker.queue(trace)
 
-    def write_service(self, services):
+    def write_services(self, services):
         service_worker = self._workers[1]
         service_worker.queue(services)
 

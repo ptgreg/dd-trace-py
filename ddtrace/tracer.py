@@ -46,9 +46,11 @@ class Tracer(object):
         # start background workers to send data to a trace agent
         self.writer.start()
 
-    def configure(self, enabled=None, hostname=None, port=None, sampler=None, buffer_size=None, flush_interval=None, service_interval=None):
+    def configure(self, enabled=None, hostname=None, port=None, sampler=None, buffer_size=None,
+                  flush_interval=None, service_interval=None):
         """
-        Configure an existing Tracer the easy way. Allow to configure or reconfigure a ``Tracer`` instance.
+        Configure an existing Tracer the easy way. Allow to configure or reconfigure a
+        ``Tracer`` instance.
 
         :param bool enabled: If True, finished traces will be submitted to the API.
                              Otherwise they'll be dropped.
@@ -202,7 +204,7 @@ class Tracer(object):
                 service, app, app_type)
 
         if self.enabled and self.writer:
-            self.writer.write_service(self._services)
+            self.writer.write_services(self._services)
 
     def wrap(self, name=None, service=None, resource=None, span_type=None):
         """A decorator used to trace an entire function.

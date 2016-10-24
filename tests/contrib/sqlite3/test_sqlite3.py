@@ -8,12 +8,10 @@ from ddtrace import Tracer
 from ddtrace.contrib.sqlite3 import connection_factory
 from ddtrace.ext import errors
 
-from ...test_tracer import DummyWriter
+from ...utils import get_test_tracer
 
 def test_foo():
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     # ensure we can trace multiple services without stomping
 
@@ -29,7 +27,7 @@ def test_foo():
         rows = cursor.fetchall()
         end = time.time()
         assert not rows
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         assert spans
         eq_(len(spans), 1)
         span = spans[0]
@@ -50,7 +48,7 @@ def test_foo():
             pass
         else:
             assert 0, "should have an error"
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         assert spans
         eq_(len(spans), 1)
         span = spans[0]
@@ -65,7 +63,7 @@ def test_foo():
         assert 'no such table' in span.get_tag(errors.ERROR_MSG)
 
     # ensure we have the service types
-    services = writer.pop_services()
+    services = tracer.writer.pop_services()
     expected = {
         "db" : {"app":"sqlite", "app_type":"db"},
         "another" : {"app":"sqlite", "app_type":"db"},

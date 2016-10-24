@@ -13,7 +13,7 @@ from ddtrace.tracer import Tracer
 from ddtrace.contrib.redis import get_traced_redis, get_traced_redis_from
 
 from ..config import REDIS_CONFIG
-from ...test_tracer import DummyWriter
+from ...utils import get_test_tracer
 
 
 class RedisTest(unittest.TestCase):
@@ -30,9 +30,7 @@ class RedisTest(unittest.TestCase):
         r.flushall()
 
     def test_long_command(self):
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         TracedRedisCache = get_traced_redis(tracer, service=self.SERVICE)
         r = TracedRedisCache(port=REDIS_CONFIG['port'])
@@ -40,7 +38,7 @@ class RedisTest(unittest.TestCase):
         long_cmd = "mget %s" % " ".join(map(str, range(1000)))
         us = r.execute_command(long_cmd)
 
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 1)
         span = spans[0]
         eq_(span.service, self.SERVICE)
@@ -59,16 +57,14 @@ class RedisTest(unittest.TestCase):
         assert span.get_tag('redis.raw_command').endswith(u'...')
 
     def test_basic_class(self):
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         TracedRedisCache = get_traced_redis(tracer, service=self.SERVICE)
         r = TracedRedisCache(port=REDIS_CONFIG['port'])
 
         us = r.get('cheese')
         eq_(us, None)
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 1)
         span = spans[0]
         eq_(span.service, self.SERVICE)
@@ -84,31 +80,27 @@ class RedisTest(unittest.TestCase):
         eq_(span.get_metric('redis.args_length'), 2)
         eq_(span.resource, 'GET cheese')
 
-        services = writer.pop_services()
+        services = tracer.writer.pop_services()
         expected = {
             self.SERVICE: {"app": "redis", "app_type": "db"}
         }
         eq_(services, expected)
 
     def test_meta_override(self):
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         TracedRedisCache = get_traced_redis(tracer, service=self.SERVICE, meta={'cheese': 'camembert'})
         r = TracedRedisCache(port=REDIS_CONFIG['port'])
 
         r.get('cheese')
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 1)
         span = spans[0]
         eq_(span.service, self.SERVICE)
         ok_('cheese' in span.meta and span.meta['cheese'] == 'camembert')
 
     def test_basic_class_pipeline(self):
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         TracedRedisCache = get_traced_redis(tracer, service=self.SERVICE)
         r = TracedRedisCache(port=REDIS_CONFIG['port'])
@@ -120,7 +112,7 @@ class RedisTest(unittest.TestCase):
 
             p.execute()
 
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 1)
         span = spans[0]
         eq_(span.service, self.SERVICE)
@@ -145,9 +137,7 @@ class RedisTest(unittest.TestCase):
                 return 'YO%sYO' % response
 
 
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         TracedRedisCache = get_traced_redis_from(tracer, MyCustomRedis, service=self.SERVICE)
         r = TracedRedisCache(port=REDIS_CONFIG['port'])
@@ -156,7 +146,7 @@ class RedisTest(unittest.TestCase):
         resp = r.get('foo')
         eq_(resp, 'YO42YO')
 
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 2)
         eq_(spans[0].name, 'redis.command')
         eq_(spans[0].resource, 'SET foo 42')

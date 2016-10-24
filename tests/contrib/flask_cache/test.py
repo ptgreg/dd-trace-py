@@ -14,7 +14,7 @@ from flask import Flask
 
 # testing
 from ..config import REDIS_CONFIG, MEMCACHED_CONFIG
-from ...test_tracer import DummyWriter
+from ...utils import get_test_tracer
 
 
 class FlaskCacheTest(unittest.TestCase):
@@ -23,10 +23,8 @@ class FlaskCacheTest(unittest.TestCase):
     TEST_MEMCACHED_PORT = str(MEMCACHED_CONFIG['port'])
 
     def test_simple_cache_get(self):
-        # initialize the dummy writer
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        # initialize the dummy tracer
+        tracer = get_test_tracer()
 
         # create the TracedCache instance for a Flask app
         Cache = get_traced_cache(tracer, service=self.SERVICE)
@@ -34,7 +32,7 @@ class FlaskCacheTest(unittest.TestCase):
         cache = Cache(app, config={"CACHE_TYPE": "simple"})
 
         cache.get(u"á_complex_operation")
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 1)
         span = spans[0]
         eq_(span.service, self.SERVICE)
@@ -52,9 +50,7 @@ class FlaskCacheTest(unittest.TestCase):
 
     def test_simple_cache_set(self):
         # initialize the dummy writer
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         # create the TracedCache instance for a Flask app
         Cache = get_traced_cache(tracer, service=self.SERVICE)
@@ -62,7 +58,7 @@ class FlaskCacheTest(unittest.TestCase):
         cache = Cache(app, config={"CACHE_TYPE": "simple"})
 
         cache.set(u"á_complex_operation", u"with_á_value\nin two lines")
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 1)
         span = spans[0]
         eq_(span.service, self.SERVICE)
@@ -80,9 +76,7 @@ class FlaskCacheTest(unittest.TestCase):
 
     def test_simple_cache_add(self):
         # initialize the dummy writer
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         # create the TracedCache instance for a Flask app
         Cache = get_traced_cache(tracer, service=self.SERVICE)
@@ -90,7 +84,7 @@ class FlaskCacheTest(unittest.TestCase):
         cache = Cache(app, config={"CACHE_TYPE": "simple"})
 
         cache.add(u"á_complex_number", 50)
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 1)
         span = spans[0]
         eq_(span.service, self.SERVICE)
@@ -108,9 +102,7 @@ class FlaskCacheTest(unittest.TestCase):
 
     def test_simple_cache_delete(self):
         # initialize the dummy writer
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         # create the TracedCache instance for a Flask app
         Cache = get_traced_cache(tracer, service=self.SERVICE)
@@ -118,7 +110,7 @@ class FlaskCacheTest(unittest.TestCase):
         cache = Cache(app, config={"CACHE_TYPE": "simple"})
 
         cache.delete(u"á_complex_operation")
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 1)
         span = spans[0]
         eq_(span.service, self.SERVICE)
@@ -136,9 +128,7 @@ class FlaskCacheTest(unittest.TestCase):
 
     def test_simple_cache_delete_many(self):
         # initialize the dummy writer
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         # create the TracedCache instance for a Flask app
         Cache = get_traced_cache(tracer, service=self.SERVICE)
@@ -146,7 +136,7 @@ class FlaskCacheTest(unittest.TestCase):
         cache = Cache(app, config={"CACHE_TYPE": "simple"})
 
         cache.delete_many("complex_operation", "another_complex_op")
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 1)
         span = spans[0]
         eq_(span.service, self.SERVICE)
@@ -164,9 +154,7 @@ class FlaskCacheTest(unittest.TestCase):
 
     def test_simple_cache_clear(self):
         # initialize the dummy writer
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         # create the TracedCache instance for a Flask app
         Cache = get_traced_cache(tracer, service=self.SERVICE)
@@ -174,7 +162,7 @@ class FlaskCacheTest(unittest.TestCase):
         cache = Cache(app, config={"CACHE_TYPE": "simple"})
 
         cache.clear()
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 1)
         span = spans[0]
         eq_(span.service, self.SERVICE)
@@ -191,9 +179,7 @@ class FlaskCacheTest(unittest.TestCase):
 
     def test_simple_cache_get_many(self):
         # initialize the dummy writer
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         # create the TracedCache instance for a Flask app
         Cache = get_traced_cache(tracer, service=self.SERVICE)
@@ -201,7 +187,7 @@ class FlaskCacheTest(unittest.TestCase):
         cache = Cache(app, config={"CACHE_TYPE": "simple"})
 
         cache.get_many('first_complex_op', 'second_complex_op')
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 1)
         span = spans[0]
         eq_(span.service, self.SERVICE)
@@ -219,9 +205,7 @@ class FlaskCacheTest(unittest.TestCase):
 
     def test_simple_cache_set_many(self):
         # initialize the dummy writer
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         # create the TracedCache instance for a Flask app
         Cache = get_traced_cache(tracer, service=self.SERVICE)
@@ -232,7 +216,7 @@ class FlaskCacheTest(unittest.TestCase):
             'first_complex_op': 10,
             'second_complex_op': 20,
         })
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         eq_(len(spans), 1)
         span = spans[0]
         eq_(span.service, self.SERVICE)

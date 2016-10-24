@@ -7,18 +7,15 @@ import threading
 
 from ddtrace.tracer import Tracer
 from ddtrace.sampler import RateSampler, ThroughputSampler, SAMPLE_RATE_METRIC_KEY
-from .test_tracer import DummyWriter
-from .util import patch_time
+
+from .utils import patch_time, get_test_tracer
 
 
 class RateSamplerTest(unittest.TestCase):
 
     def test_sample_rate_deviation(self):
-        writer = DummyWriter()
-
         for sample_rate in [0.1, 0.25, 0.5, 1]:
-            tracer = Tracer()
-            tracer.writer = writer
+            tracer = get_test_tracer()
 
             sample_rate = 0.5
             tracer.sampler = RateSampler(sample_rate)
@@ -31,7 +28,7 @@ class RateSamplerTest(unittest.TestCase):
                 span = tracer.trace(i)
                 span.finish()
 
-            samples = writer.pop()
+            samples = tracer.writer.pop()
 
             # We must have at least 1 sample, check that it has its sample rate properly assigned
             assert samples[0].get_metric(SAMPLE_RATE_METRIC_KEY) == 0.5
@@ -45,9 +42,7 @@ class ThroughputSamplerTest(unittest.TestCase):
     """Test suite for the ThroughputSampler"""
 
     def test_simple_limit(self):
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         with patch_time() as fake_time:
             tps = 5
@@ -56,7 +51,7 @@ class ThroughputSamplerTest(unittest.TestCase):
             for _ in range(10):
                 s = tracer.trace("whatever")
                 s.finish()
-            traces = writer.pop()
+            traces = tracer.writer.pop()
 
             got = len(traces)
             expected = 10
@@ -70,7 +65,7 @@ class ThroughputSamplerTest(unittest.TestCase):
             for _ in range(100):
                 s = tracer.trace("whatever")
                 s.finish()
-            traces = writer.pop()
+            traces = tracer.writer.pop()
 
             got = len(traces)
             expected = tps * tracer.sampler.BUFFER_DURATION
@@ -79,9 +74,7 @@ class ThroughputSamplerTest(unittest.TestCase):
                 "Wrong number of traces sampled, %s instead of %s" % (got, expected)
 
     def test_long_run(self):
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         # Test a big matrix of combinaisons
         # Ensure to have total_time >> BUFFER_DURATION to reduce edge effects
@@ -100,7 +93,7 @@ class ThroughputSamplerTest(unittest.TestCase):
                             s.finish()
                         fake_time.sleep(1)
 
-                traces = writer.pop()
+                traces = tracer.writer.pop()
                 # The current sampler implementation can introduce an error of up to
                 # `tps * BUFFER_DURATION` traces at initialization (since the sampler starts empty)
                 got = len(traces)
@@ -113,9 +106,7 @@ class ThroughputSamplerTest(unittest.TestCase):
 
     def test_concurrency(self):
         # Test that the sampler works well when used in different threads
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        tracer = get_test_tracer()
 
         total_time = 10
         concurrency = 100
@@ -144,7 +135,7 @@ class ThroughputSamplerTest(unittest.TestCase):
         for t in threads:
             t.join()
 
-        traces = writer.pop()
+        traces = tracer.writer.pop()
 
         got = len(traces)
         expected = tps * total_time

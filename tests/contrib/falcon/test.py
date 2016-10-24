@@ -15,7 +15,8 @@ from nose.plugins.attrib import attr
 from ddtrace import Tracer
 from ddtrace.contrib.falcon import TraceMiddleware
 from ddtrace.ext import http as httpx
-from tests.test_tracer import DummyWriter
+
+from ...utils import get_test_tracer
 
 
 class Resource200(object):
@@ -57,9 +58,7 @@ class ResourceExc(object):
 class TestMiddleware(falcon.testing.TestCase):
 
     def setUp(self):
-        self._tracer = Tracer()
-        self._writer = DummyWriter()
-        self._tracer.writer = self._writer
+        self._tracer = get_test_tracer()
         self._service = "my-falcon"
 
         self.api = falcon.API(middleware=[TraceMiddleware(self._tracer, self._service)])
@@ -77,7 +76,7 @@ class TestMiddleware(falcon.testing.TestCase):
         out = self.simulate_get('/404')
         eq_(out.status_code, 404)
 
-        spans = self._writer.pop()
+        spans = self._tracer.writer.pop()
         eq_(len(spans), 1)
         span = spans[0]
         eq_(span.service, self._service)
@@ -94,7 +93,7 @@ class TestMiddleware(falcon.testing.TestCase):
         else:
             assert 0
 
-        spans = self._writer.pop()
+        spans = self._tracer.writer.pop()
         eq_(len(spans), 1)
         span = spans[0]
         eq_(span.service, self._service)
@@ -107,7 +106,7 @@ class TestMiddleware(falcon.testing.TestCase):
         eq_(out.status_code, 200)
         eq_(out.content.decode('utf-8'), Resource200.BODY)
 
-        spans = self._writer.pop()
+        spans = self._tracer.writer.pop()
         eq_(len(spans), 1)
         span = spans[0]
         eq_(span.service, self._service)
@@ -120,7 +119,7 @@ class TestMiddleware(falcon.testing.TestCase):
         eq_(out.status_code, 500)
         eq_(out.content.decode('utf-8'), Resource500.BODY)
 
-        spans = self._writer.pop()
+        spans = self._tracer.writer.pop()
         eq_(len(spans), 1)
         span = spans[0]
         eq_(span.service, self._service)

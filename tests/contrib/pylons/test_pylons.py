@@ -6,7 +6,7 @@ from ddtrace import Tracer
 from ddtrace.contrib.pylons import PylonsTraceMiddleware
 from ddtrace.ext import http
 
-from ...test_tracer import DummyWriter
+from ...utils import get_test_tracer
 
 
 class FakeWSGIApp(object):
@@ -29,14 +29,12 @@ class FakeWSGIApp(object):
 
 
 def test_pylons():
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
     app = FakeWSGIApp()
     traced = PylonsTraceMiddleware(app, tracer, service="p")
 
     # successful request
-    assert not writer.pop()
+    assert not tracer.writer.pop()
     app.code = '200 OK'
     app.body = ['woo']
     app.environ = {
@@ -54,7 +52,7 @@ def test_pylons():
     eq_(app.code, app.out_code)
 
     assert not tracer.current_span(), tracer.current_span().pprint()
-    spans = writer.pop()
+    spans = tracer.writer.pop()
     assert spans, spans
     eq_(len(spans), 1)
     s = spans[0]

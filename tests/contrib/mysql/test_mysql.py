@@ -14,11 +14,11 @@ from nose.tools import eq_, \
 from ddtrace.tracer import Tracer
 from ddtrace.contrib.mysql import get_traced_mysql_connection
 
-from tests.test_tracer import DummyWriter
-from tests.contrib.config import MYSQL_CONFIG
-
 from mysql.connector import __version__ as connector_version
 from subprocess import check_call
+
+from ..config import MYSQL_CONFIG
+from ...utils import get_test_tracer
 
 META_KEY = "this.is"
 META_VALUE = "A simple test value"
@@ -87,9 +87,7 @@ def test_version():
 
 def test_connection():
     """Tests that a connection can be opened."""
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     MySQL = get_traced_mysql_connection(tracer, service=SERVICE)
     conn = MySQL(**MYSQL_CONFIG)
@@ -98,9 +96,7 @@ def test_connection():
 
 def test_simple_query():
     """Tests a simple query and checks the span is correct."""
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     MySQL = get_traced_mysql_connection(tracer,
                                         service=SERVICE,
@@ -110,7 +106,7 @@ def test_simple_query():
     cursor.execute("SELECT 1")
     rows = cursor.fetchall()
     eq_(len(rows), 1)
-    spans = writer.pop()
+    spans = tracer.writer.pop()
     eq_(len(spans), 1)
 
     span = spans[0]
@@ -130,9 +126,7 @@ def test_simple_query():
 
 def test_simple_fetch():
     """Tests a simple query with a fetch, enabling fetch tracing."""
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     MySQL = get_traced_mysql_connection(tracer,
                                         service=SERVICE,
@@ -143,7 +137,7 @@ def test_simple_fetch():
     cursor.execute("SELECT 1")
     rows = cursor.fetchall()
     eq_(len(rows), 1)
-    spans = writer.pop()
+    spans = tracer.writer.pop()
     eq_(len(spans), 2)
 
     span = spans[0]
@@ -178,9 +172,7 @@ def test_simple_fetch():
 
 def test_query_with_several_rows():
     """Tests that multiple rows are returned."""
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     MySQL = get_traced_mysql_connection(tracer, service=SERVICE)
     conn = MySQL(**MYSQL_CONFIG)
@@ -191,16 +183,14 @@ def test_query_with_several_rows():
     rows = cursor.fetchall()
     eq_(len(rows), 3)
 
-    spans = writer.pop()
+    spans = tracer.writer.pop()
     assert_greater_equal(len(spans), 1)
     for span in spans:
         assert_dict_contains_subset({'sql.query': query}, span.meta)
 
 def test_query_many():
     """Tests that the executemany method is correctly wrapped."""
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     MySQL = get_traced_mysql_connection(tracer, service=SERVICE)
     conn = MySQL(**MYSQL_CONFIG)
@@ -221,7 +211,7 @@ def test_query_many():
     eq_(rows[1][0], "foo")
     eq_(rows[1][1], "this is foo")
 
-    spans = writer.pop()
+    spans = tracer.writer.pop()
     assert_greater_equal(len(spans), 2)
     span = spans[-1]
     assert_dict_contains_subset({'sql.query': query}, span.meta)
@@ -230,9 +220,7 @@ def test_query_many():
 
 def test_query_proc():
     """Tests that callproc works as expected, and generates a correct span."""
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     MySQL = get_traced_mysql_connection(tracer, service=SERVICE)
     conn = MySQL(**MYSQL_CONFIG)
@@ -245,7 +233,7 @@ def test_query_proc():
     eq_(len(output), 3)
     eq_(output[2], 42)
 
-    spans = writer.pop()
+    spans = tracer.writer.pop()
 
     # number of spans depends on MySQL implementation details,
     # typically, internal calls to execute, but at least we
@@ -271,9 +259,7 @@ def test_fetch_variants():
     Tests that calling different variants of fetch works,
     even when calling them on a simple execute query.
     """
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     MySQL = get_traced_mysql_connection(tracer,
                                         service=SERVICE,
@@ -322,7 +308,7 @@ def test_fetch_variants():
 
     eq_(NB_FETCH_TOTAL, fetchmany_nbrows_a + fetchmany_nbrows_b + 2)
 
-    spans = writer.pop()
+    spans = tracer.writer.pop()
     assert_greater_equal(len(spans), 1)
     span = spans[-1]
     assert_dict_contains_subset({'sql.query': query}, span.meta)
@@ -330,9 +316,7 @@ def test_fetch_variants():
     cursor.execute(DROP_TABLE_DUMMY)
 
 def check_connection_class(buffered, raw, baseclass_name):
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     MySQL = get_traced_mysql_connection(tracer, service=SERVICE)
     conn = MySQL(buffered=buffered, raw=raw, **MYSQL_CONFIG)
@@ -344,7 +328,7 @@ def check_connection_class(buffered, raw, baseclass_name):
     eq_(len(rows), 1)
     eq_(int(rows[0][0]), 1)
 
-    spans = writer.pop()
+    spans = tracer.writer.pop()
     assert_greater_equal(len(spans), 1)
     for span in spans:
         assert_dict_contains_subset({'sql.query': query}, span.meta)
@@ -364,9 +348,7 @@ def test_connection_class():
         yield f, cases["buffered"], cases["raw"], cases["baseclass_name"]
 
 def check_cursor_class(buffered, raw, baseclass_name):
-    writer = DummyWriter()
-    tracer = Tracer()
-    tracer.writer = writer
+    tracer = get_test_tracer()
 
     MySQL = get_traced_mysql_connection(tracer, service=SERVICE)
     conn = MySQL(**MYSQL_CONFIG)
@@ -378,7 +360,7 @@ def check_cursor_class(buffered, raw, baseclass_name):
     eq_(len(rows), 1)
     eq_(int(rows[0][0]), 1)
 
-    spans = writer.pop()
+    spans = tracer.writer.pop()
     assert_greater_equal(len(spans), 1)
     for span in spans:
         assert_dict_contains_subset({'sql.query': query}, span.meta)

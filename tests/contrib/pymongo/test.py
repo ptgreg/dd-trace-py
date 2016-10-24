@@ -11,7 +11,7 @@ from ddtrace.contrib.pymongo.trace import trace_mongo_client, normalize_filter
 
 # testing
 from ..config import MONGO_CONFIG
-from ...test_tracer import DummyWriter
+from ...utils import get_test_tracer
 
 
 def test_normalize_filter():
@@ -207,9 +207,7 @@ def test_insert_find():
 
 def _get_tracer_and_client(service):
     """ Return a tuple of (tracer, mongo_client) for testing. """
-    tracer = Tracer()
-    writer = DummyWriter()
-    tracer.writer = writer
+    tracer = get_test_tracer()
     original_client = MongoClient(port=MONGO_CONFIG['port'])
     client = trace_mongo_client(original_client, tracer, service=service)
     return tracer, client

@@ -10,7 +10,7 @@ from ddtrace.contrib.elasticsearch import get_traced_transport, metadata
 
 # testing
 from ..config import ELASTICSEARCH_CONFIG
-from ...test_tracer import DummyWriter
+from ...utils import get_test_tracer
 
 
 class ElasticsearchTest(unittest.TestCase):
@@ -35,13 +35,10 @@ class ElasticsearchTest(unittest.TestCase):
         es.indices.delete(index=self.ES_INDEX, ignore=[400, 404])
 
     def test_elasticsearch(self):
-        """Test the elasticsearch integration
-
-        All in this for now. Will split it later.
         """
-        writer = DummyWriter()
-        tracer = Tracer()
-        tracer.writer = writer
+        Test the elasticsearch integration. This test will be split later.
+        """
+        tracer = get_test_tracer()
         transport_class = get_traced_transport(
                 datadog_tracer=tracer,
                 datadog_service=self.TEST_SERVICE)
@@ -51,7 +48,7 @@ class ElasticsearchTest(unittest.TestCase):
         # Test index creation
         es.indices.create(index=self.ES_INDEX, ignore=400)
 
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         assert spans
         eq_(len(spans), 1)
         span = spans[0]
@@ -69,7 +66,7 @@ class ElasticsearchTest(unittest.TestCase):
         es.index(id=11, body={'name': 'eleven'}, **args)
         es.index(id=12, body={'name': 'twelve'}, **args)
 
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         assert spans
         eq_(len(spans), 3)
         span = spans[0]
@@ -82,7 +79,7 @@ class ElasticsearchTest(unittest.TestCase):
         es.search(sort=['name:desc'], size=100,
                 body={"query":{"match_all":{}}}, **args)
 
-        spans = writer.pop()
+        spans = tracer.writer.pop()
         assert spans
         eq_(len(spans), 1)
         span = spans[0]

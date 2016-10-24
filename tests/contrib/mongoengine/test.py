@@ -14,7 +14,7 @@ from ddtrace.contrib.mongoengine import trace_mongoengine
 
 # testing
 from ..config import MONGO_CONFIG
-from ...test_tracer import DummyWriter
+from ...utils import get_test_tracer
 
 
 class Artist(Document):
@@ -23,8 +23,7 @@ class Artist(Document):
 
 
 def test_insert_update_delete_query():
-    tracer = Tracer()
-    tracer.writer = DummyWriter()
+    tracer = get_test_tracer()
 
     # patch the mongo db connection
     traced_connect = trace_mongoengine(tracer, service='my-mongo')

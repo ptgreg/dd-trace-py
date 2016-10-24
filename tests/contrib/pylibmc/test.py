@@ -11,8 +11,9 @@ from nose.tools import eq_
 from ddtrace import Tracer
 from ddtrace.ext import errors
 from ddtrace.contrib.pylibmc import TracedClient
-from tests.test_tracer import DummyWriter
-from tests.contrib.config import MEMCACHED_CONFIG as cfg
+
+from ..config import MEMCACHED_CONFIG as cfg
+from ...utils import get_test_tracer
 
 
 TEST_SERVICE = "foobar"
@@ -157,8 +158,7 @@ def _setup():
     raw_client = pylibmc.Client([url])
     raw_client.flush_all()
 
-    tracer = Tracer()
-    tracer.writer = DummyWriter()
+    tracer = get_test_tracer()
 
     client = TracedClient(raw_client, tracer=tracer, service=TEST_SERVICE)
     return client, tracer

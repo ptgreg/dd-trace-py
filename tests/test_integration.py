@@ -95,8 +95,8 @@ class TestWorkers(TestCase):
 
 
 @skipUnless(
-    os.environ.get('DATADOG_INTEGRATION_TESTS', False),
-    'You should have a running trace agent and set the DATADOG_INTEGRATION_TESTS env variable'
+    os.environ.get('TEST_DATADOG_INTEGRATION', False),
+    'You should have a running trace agent and set the TEST_DATADOG_INTEGRATION env variable'
 )
 class TestDefaultTransport(TestCase):
     """

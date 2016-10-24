@@ -3,7 +3,7 @@ import timeit
 
 from ddtrace import Tracer
 
-from .test_tracer import DummyWriter
+from .utils import get_test_tracer
 
 
 REPEAT = 10
@@ -17,8 +17,7 @@ def trace_error(tracer):
 
 
 def benchmark_tracer_trace():
-    tracer = Tracer()
-    tracer.writer = DummyWriter()
+    tracer = get_test_tracer()
 
     # testcase
     def trace(tracer):
@@ -39,8 +38,7 @@ def benchmark_tracer_trace():
 
 
 def benchmark_tracer_wrap():
-    tracer = Tracer()
-    tracer.writer = DummyWriter()
+    tracer = get_test_tracer()
 
     # testcase
     class Foo(object):

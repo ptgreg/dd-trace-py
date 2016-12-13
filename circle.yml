@@ -12,6 +12,7 @@ dependencies:
     # we should use an old docker-compose because CircleCI supports
     # only docker-engine==1.9
     - pip install docker-compose==1.7.1
+    - pip install tox
     - sudo apt-get install libmemcached-dev # required for pylibmc
     # prepare and run the trace agent
     # TODO[manu]: remove this part when everything will be open source

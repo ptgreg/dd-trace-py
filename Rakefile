@@ -2,7 +2,12 @@ desc "Starts all backing services and run all tests"
 task :test do
   sh "docker-compose up -d | cat"
   begin
-    sh "tox"
+    if ENV['CIRCLE_NODE_TOTAL'].nil?
+      sh "tox"
+    else
+      sh %x(tox -e flake8,wait)
+      sh %x(tox -l | grep -vE 'flake8|wait' | sort | awk "NR % #{ENV['CIRCLE_NODE_TOTAL']} == #{ENV['CIRCLE_NODE_INDEX']}" | xargs tox -e)
+    end
   ensure
     sh "docker-compose kill"
   end

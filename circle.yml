@@ -18,6 +18,7 @@ dependencies:
     - git clone git@github.com:DataDog/datadog-trace-agent.git $AGENT_BUILD_PATH
     - cd $AGENT_BUILD_PATH && docker build -t datadog/trace-agent .
     - docker run -d -e DD_API_KEY=invalid_key_but_this_is_fine -e DD_BIND_HOST=0.0.0.0 -p 127.0.0.1:7777:7777 datadog/trace-agent
+    - pip install tox flake8
 
 test:
   override:

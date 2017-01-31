@@ -56,6 +56,7 @@ setup(
     author_email='dev@datadoghq.com',
     license='BSD',
     packages=find_packages(exclude=['tests*']),
+    scripts=['ddtrace/scripts/ddtrace-run'],
     install_requires=[
         "wrapt",
         "msgpack-python",

@@ -1,1 +1,1 @@
-from ddtrace import patch_all; patch_all()
+from ddtrace import patch_all; patch_all() # noqa

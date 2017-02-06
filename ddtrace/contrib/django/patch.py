@@ -17,6 +17,6 @@ def traced_setup(wrapped, instance, args, kwargs):
 
     settings.INSTALLED_APPS = settings.INSTALLED_APPS + ('ddtrace.contrib.django', )
     settings.MIDDLEWARE_CLASSES = (
-       'ddtrace.contrib.django.TraceMiddleware',
+        'ddtrace.contrib.django.TraceMiddleware',
     ) + settings.MIDDLEWARE_CLASSES
     wrapped(*args, **kwargs)

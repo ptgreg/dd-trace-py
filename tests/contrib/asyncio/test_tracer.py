@@ -156,3 +156,17 @@ class TestAsyncioTracer(AsyncioTestCase):
         eq_(1, span.error)
         eq_('f1 error', span.get_tag('error.msg'))
         ok_('Exception: f1 error' in span.get_tag('error.stack'))
+
+    @mark_asyncio
+    def test_wrapped_coroutine(self):
+        @self.tracer.wrap('f1')
+        async def f1():
+            await asyncio.sleep(0.25)
+        yield from f1()
+        traces = self.tracer.writer.pop_traces()
+        eq_(1, len(traces))
+        spans = traces[0]
+        eq_(1, len(spans))
+        span = spans[0]
+        ok_(span.duration > 0.25,
+            msg="span.duration={0}".format(span.duration))

@@ -2,6 +2,7 @@ import os
 import jinja2
 import aiohttp_jinja2
 
+import asyncio
 from aiohttp import web
 
 
@@ -34,13 +35,19 @@ def route_exception(request):
 async def route_async_exception(request):
     raise Exception('error')
 
+async def route_wrapped_coroutine(request):
+    tracer = get_tracer(request)
+    @tracer.wrap('nested')
+    async def nested():
+        await asyncio.sleep(0.25)
+    await nested()
+    return web.Response(text='OK')
 
 async def coro_2(request):
     tracer = get_tracer(request)
     with tracer.trace('aiohttp.coro_2') as span:
         span.set_tag('aiohttp.worker', 'pending')
     return 'OK'
-
 
 async def template_handler(request):
     return aiohttp_jinja2.render_template('template.jinja2', request, {'text': 'OK'})
@@ -55,7 +62,6 @@ async def template_decorator(request):
 async def template_error(request):
     return {}
 
-
 def setup_app(loop):
     """
     Use this method to create the app. It must receive
@@ -69,6 +75,7 @@ def setup_app(loop):
     app.router.add_get('/chaining/', coroutine_chaining)
     app.router.add_get('/exception', route_exception)
     app.router.add_get('/async_exception', route_async_exception)
+    app.router.add_get('/wrapped_coroutine', route_wrapped_coroutine)
     app.router.add_static('/statics', STATIC_DIR)
     # configure templates
     set_memory_loader(app)

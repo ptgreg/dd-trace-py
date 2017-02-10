@@ -4,16 +4,12 @@ from __future__ import print_function
 import os
 import sys
 
-if __name__ == '__main__':
-    program_exe_path = sys.argv[1]
+def _ddtrace_root():
+    from ddtrace import __file__
+    return os.path.dirname(__file__)
 
-    from ddtrace import __file__ as root_directory
-
-    root_directory = os.path.dirname(root_directory)
-    boot_directory = os.path.join(root_directory, 'bootstrap')
-
-    python_path = boot_directory
-
+def _add_bootstrap_to_pythonpath(bootstrap_dir):
+    python_path = bootstrap_dir
     if 'PYTHONPATH' in os.environ:
         path = os.environ['PYTHONPATH'].split(os.path.pathsep)
         if not boot_directory in path:
@@ -22,6 +18,13 @@ if __name__ == '__main__':
 
     os.environ['PYTHONPATH'] = python_path
 
+if __name__ == '__main__':
+    root_dir = _ddtrace_root()
+    bootstrap_dir= os.path.join(root_dir, 'bootstrap')
+
+    _add_bootstrap_to_pythonpath(bootstrap_dir)
+
+    program_exe_path = sys.argv[1]
     # Find the executable path
     if not os.path.dirname(program_exe_path):
         program_search_path = os.environ.get('PATH', '').split(os.path.pathsep)
@@ -34,5 +37,10 @@ if __name__ == '__main__':
     print("argv:", sys.argv)
     print("pythonpath:", os.environ['PYTHONPATH'])
     print("program path:", program_exe_path)
+
+    if not 'DATADOG_SERVICE_NAME' in os.environ:
+        # infer service name from program command-line
+        service_name = os.path.basename(program_exe_path)
+        os.environ['DATADOG_SERVICE_NAME'] = service_name
 
     os.execl(program_exe_path, program_exe_path, *sys.argv[2:])

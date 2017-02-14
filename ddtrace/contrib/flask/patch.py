@@ -1,10 +1,8 @@
 import os
 
-from ...ext import AppTypes
 from .middleware import TraceMiddleware
 from ddtrace import tracer
 
-from wrapt import ObjectProxy
 import flask
 
 

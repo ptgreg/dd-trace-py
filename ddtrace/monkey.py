@@ -25,6 +25,7 @@ PATCH_MODULES = {
     'sqlite3': True,
     'django': False,
     'flask': False,
+    'pylons': False,
 }
 
 _LOCK = threading.Lock()

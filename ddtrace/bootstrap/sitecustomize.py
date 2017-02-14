@@ -1,4 +1,9 @@
-from ddtrace import patch_all; patch_all() # noqa
+"""
+Bootstrapping code that is run when using the `ddtrace-run` Python entrypoint
+Add all monkey-patching that needs to run by default here
+"""
+
+from ddtrace import patch_all; patch_all(django=True, flask=True) # noqa
 import os
 
 from ddtrace import tracer

@@ -24,6 +24,7 @@ PATCH_MODULES = {
     'sqlalchemy': False,  # Prefer DB client instrumentation
     'sqlite3': True,
     'django': True,
+    'flask': True,
 }
 
 _LOCK = threading.Lock()

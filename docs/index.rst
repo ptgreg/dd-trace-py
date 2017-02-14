@@ -8,24 +8,26 @@ have great visibility into bottlenecks and troublesome requests.
 Installation
 ------------
 
-Install with :code:`pip` but point to Datadog's package repo::
+Install with :code:`pip`::
 
-    $ pip install ddtrace --find-links=https://s3.amazonaws.com/pypi.datadoghq.com/trace/index.html
+    $ pip install ddtrace
 
-We strongly suggest pinning the version number you deploy while we are
-in beta.
+We strongly suggest pinning the version of the library you deploy.
 
 Get Started
 -----------
 
-Patching
-~~~~~~~~
-
 Datadog Tracing can automatically instrument many widely used Python libraries
 and frameworks.
 
+Web
+~~~
+
 The easiest way to get started with tracing is to instrument your web server.
 We support many `Web Frameworks`_. Install the middleware for yours.
+
+Databases
+~~~~~~~~~
 
 Then let's patch all the widely used Python libraries that you are running::
 
@@ -35,19 +37,8 @@ Then let's patch all the widely used Python libraries that you are running::
 
 Start your web server and you should be off to the races.
 
-If you want to restrict the set of instrumented libraries, you can either say
-which ones to instrument, or which ones not to::
-
-    from ddtrace import patch_all, patch
-
-    # Patch all libraries, except mysql and pymongo
-    patch_all(mysql=False, pymongo=False)
-
-    # Only patch redis and elasticsearch, raising an exception if one fails
-    patch(redis=True, elasticsearch=True, raise_errors=True)
-
-Custom Tracing
-~~~~~~~~~~~~~~
+Custom
+~~~~~~
 
 You can easily extend the spans we collect by adding your own traces. Here's a
 small example that shows adding a custom span to a Flask application::
@@ -55,7 +46,7 @@ small example that shows adding a custom span to a Flask application::
     from ddtrace import tracer
 
     # add the `wrap` decorator to trace an entire function.
-    @tracer.wrap()
+    @tracer.wrap(service='my-app')
     def save_thumbnails(img, sizes):
 
         thumbnails = [resize_image(img, size) for size in sizes]
@@ -70,57 +61,6 @@ small example that shows adding a custom span to a Flask application::
 
 
 Read the full `API`_ for more details.
-
-
-Sampling
-~~~~~~~~
-
-It is possible to sample traces with `ddtrace`.
-While the Trace Agent already samples traces to reduce the bandwidth usage, this client sampling
-reduces performance overhead.
-
-`RateSampler` samples a ratio of the traces. Its usage is simple::
-
-    from ddtrace.sampler import RateSampler
-
-    # Sample rate is between 0 (nothing sampled) to 1 (everything sampled).
-    # Sample 50% of the traces.
-    sample_rate = 0.5
-    tracer.sampler = RateSampler(sample_rate)
-
-Distributed Tracing
-~~~~~~~~~~~~~~~~~~
-
-To trace requests across hosts, the spans on the secondary hosts must be linked together by setting `trace_id` and `parent_id`::
-
-    def trace_request_on_secondary_host(parent_trace_id, parent_span_id):
-        with tracer.trace("child_span") as span:
-            span.parent_id = parent_span_id
-            span.trace_id = parent_trace_id
-
-
-Users can pass along the parent_trace_id and parent_span_id via whatever method best matches the RPC framework. For example, with HTTP headers (Using Python Flask)::
-
-    def parent_rpc_call():
-        with tracer.trace("parent_span") as span:
-            import requests
-            headers = {'x-ddtrace-parent_trace_id':span.trace_id,
-                       'x-ddtrace-parent_span_id':span.span_id}
-            url = "<some RPC endpoint>"
-            r = requests.get(url, headers=headers)
-
-
-    from flask import request
-    parent_trace_id = request.headers.get(‘x-ddtrace-parent_trace_id‘)
-    parent_span_id = request.headers.get(‘x-ddtrace-parent_span_id‘)
-    child_rpc_call(parent_trace_id, parent_span_id)
-
-
-    def child_rpc_call(parent_trace_id, parent_span_id):
-        with tracer.trace("child_span") as span:
-            span.parent_id = parent_span_id
-            span.trace_id = parent_trace_id
-
 
 Glossary
 --------
@@ -167,6 +107,8 @@ API
     :members:
     :special-members: __init__
 
+.. autofunction:: ddtrace.monkey.patch_all
+
 .. toctree::
    :maxdepth: 2
 
@@ -186,11 +128,6 @@ Django
 
 .. automodule:: ddtrace.contrib.django
 
-Pylons
-~~~~~~
-
-.. automodule:: ddtrace.contrib.pylons
-
 Falcon
 ~~~~~~
 
@@ -200,6 +137,17 @@ Flask
 ~~~~~
 
 .. automodule:: ddtrace.contrib.flask
+
+Pylons
+~~~~~~
+
+.. automodule:: ddtrace.contrib.pylons
+
+Pyramid
+~~~~~~~
+
+.. automodule:: ddtrace.contrib.pyramid
+
 
 Other Libraries
 ---------------
@@ -261,6 +209,62 @@ SQLite
 ~~~~~~
 
 .. automodule:: ddtrace.contrib.sqlite3
+
+
+Tutorials
+---------
+
+Sampling
+~~~~~~~~
+
+It is possible to sample traces with `ddtrace`.
+While the Trace Agent already samples traces to reduce the bandwidth usage, this client sampling
+reduces performance overhead.
+
+`RateSampler` samples a ratio of the traces. Its usage is simple::
+
+    from ddtrace.sampler import RateSampler
+
+    # Sample rate is between 0 (nothing sampled) to 1 (everything sampled).
+    # Sample 50% of the traces.
+    sample_rate = 0.5
+    tracer.sampler = RateSampler(sample_rate)
+
+Distributed Tracing
+~~~~~~~~~~~~~~~~~~~
+
+To trace requests across hosts, the spans on the secondary hosts must be linked together by setting `trace_id` and `parent_id`::
+
+    def trace_request_on_secondary_host(parent_trace_id, parent_span_id):
+        with tracer.trace("child_span") as span:
+            span.parent_id = parent_span_id
+            span.trace_id = parent_trace_id
+
+
+Users can pass along the parent_trace_id and parent_span_id via whatever method best matches the RPC framework. For example, with HTTP headers (Using Python Flask)::
+
+    def parent_rpc_call():
+        with tracer.trace("parent_span") as span:
+            import requests
+            headers = {'x-ddtrace-parent_trace_id':span.trace_id,
+                       'x-ddtrace-parent_span_id':span.span_id}
+            url = "<some RPC endpoint>"
+            r = requests.get(url, headers=headers)
+
+
+    from flask import request
+    parent_trace_id = request.headers.get(‘x-ddtrace-parent_trace_id‘)
+    parent_span_id = request.headers.get(‘x-ddtrace-parent_span_id‘)
+    child_rpc_call(parent_trace_id, parent_span_id)
+
+
+    def child_rpc_call(parent_trace_id, parent_span_id):
+        with tracer.trace("child_span") as span:
+            span.parent_id = parent_span_id
+            span.trace_id = parent_trace_id
+
+
+
 
 Indices and tables
 ==================

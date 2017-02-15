@@ -31,6 +31,7 @@ def main():
     _add_bootstrap_to_pythonpath(bootstrap_dir)
     if len(sys.argv) < 2:
         print(USAGE)
+        return
 
     program_exe_path = sys.argv[1]
     # Find the executable path

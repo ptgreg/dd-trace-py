@@ -4,6 +4,11 @@ from __future__ import print_function
 import os
 import sys
 
+
+USAGE = """
+Usage: ddtrace-run [ENV_VARS] <my_program>
+"""
+
 def _ddtrace_root():
     from ddtrace import __file__
     return os.path.dirname(__file__)
@@ -18,11 +23,14 @@ def _add_bootstrap_to_pythonpath(bootstrap_dir):
 
     os.environ['PYTHONPATH'] = python_path
 
-if __name__ == '__main__':
+
+def main():
     root_dir = _ddtrace_root()
     bootstrap_dir= os.path.join(root_dir, 'bootstrap')
 
     _add_bootstrap_to_pythonpath(bootstrap_dir)
+    if len(sys.argv) < 2:
+        print(USAGE)
 
     program_exe_path = sys.argv[1]
     # Find the executable path

@@ -56,7 +56,6 @@ setup(
     author_email='dev@datadoghq.com',
     license='BSD',
     packages=find_packages(exclude=['tests*']),
-    scripts=['ddtrace/scripts/ddtrace-run'],
     install_requires=[
         "wrapt",
         "msgpack-python",
@@ -64,4 +63,9 @@ setup(
     # plugin tox
     tests_require=['tox', 'flake8'],
     cmdclass={'test': Tox},
+    entry_points={
+        'console_scripts': [
+            'ddtrace-run = ddtrace.scripts.ddtrace_run:main'
+        ]
+    }
 )

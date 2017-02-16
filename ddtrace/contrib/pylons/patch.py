@@ -2,9 +2,9 @@ import os
 
 from ...ext import http
 from ...ext import AppTypes
-from .middleware import PylonsTraceMiddleware
-from ddtrace import tracer
+from ddtrace import tracer, Pin
 
+import wrapt
 import pylons.wsgiapp
 
 def patch():
@@ -22,7 +22,7 @@ class TracedPylonsApp(wrapt.ObjectProxy):
         super(TracedPylonsApp, self).__init__(*args, **kwargs)
 
         service = os.environ.get("DATADOG_SERVICE_NAME") or "pylons"
-        pin = ddtrace.Pin(service=service, tracer=tracer).onto(self)
+        pin = Pin(service=service, tracer=tracer).onto(self)
         pin.tracer.set_service_info(
             service=service,
             app="pylons",
@@ -30,7 +30,7 @@ class TracedPylonsApp(wrapt.ObjectProxy):
         )
 
     def __call__(self, environ, start_response):
-        pin = ddtrace.Pin.get_from(self)
+        pin = Pin.get_from(self)
         if not pin:
             return self.__wrapped__(environ, start_response)
 

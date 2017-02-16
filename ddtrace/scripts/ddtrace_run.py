@@ -17,8 +17,8 @@ def _add_bootstrap_to_pythonpath(bootstrap_dir):
     python_path = bootstrap_dir
     if 'PYTHONPATH' in os.environ:
         path = os.environ['PYTHONPATH'].split(os.path.pathsep)
-        if not boot_directory in path:
-            python_path = "%s%s%s" % (boot_directory, os.path.pathsep,
+        if bootstrap_dir not in path:
+            python_path = "%s%s%s" % (bootstrap_dir, os.path.pathsep,
                     os.environ['PYTHONPATH'])
 
     os.environ['PYTHONPATH'] = python_path
@@ -26,7 +26,7 @@ def _add_bootstrap_to_pythonpath(bootstrap_dir):
 
 def main():
     root_dir = _ddtrace_root()
-    bootstrap_dir= os.path.join(root_dir, 'bootstrap')
+    bootstrap_dir = os.path.join(root_dir, 'bootstrap')
 
     _add_bootstrap_to_pythonpath(bootstrap_dir)
     if len(sys.argv) < 2:
@@ -47,7 +47,7 @@ def main():
     print("pythonpath:", os.environ['PYTHONPATH'])
     print("program path:", program_exe_path)
 
-    if not 'DATADOG_SERVICE_NAME' in os.environ:
+    if 'DATADOG_SERVICE_NAME' not in os.environ:
         # infer service name from program command-line
         service_name = os.path.basename(program_exe_path)
         os.environ['DATADOG_SERVICE_NAME'] = service_name

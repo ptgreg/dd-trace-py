@@ -16,7 +16,6 @@ Then you can define your routes and views as usual.
 """
 
 from .middleware import PylonsTraceMiddleware
-from .patch import patch
 
 
-__all__ = ['PylonsTraceMiddleware', 'patch']
+__all__ = ['PylonsTraceMiddleware']

@@ -4,7 +4,6 @@ from ...ext import http
 from ...ext import AppTypes
 from ddtrace import tracer, Pin
 
-import wrapt
 import pylons.wsgiapp
 
 def patch():
@@ -14,16 +13,16 @@ def patch():
         return
 
     setattr(pylons.wsgiapp, '_datadog_patch', True)
-    setattr(pylons.wsgiapp, 'PylonsApp', TracedPylonsApp(pylons.wsgiapp.PylonsApp))
+    setattr(pylons.wsgiapp, 'PylonsApp', TracedPylonsApp)
 
 
-class TracedPylonsApp(wrapt.ObjectProxy):
+class TracedPylonsApp(pylons.wsgiapp.PylonsApp):
     def __init__(self, *args, **kwargs):
         super(TracedPylonsApp, self).__init__(*args, **kwargs)
 
         service = os.environ.get("DATADOG_SERVICE_NAME") or "pylons"
         pin = Pin(service=service, tracer=tracer).onto(self)
-        pin.tracer.set_service_info(
+        tracer.set_service_info(
             service=service,
             app="pylons",
             app_type=AppTypes.web,
@@ -32,14 +31,14 @@ class TracedPylonsApp(wrapt.ObjectProxy):
     def __call__(self, environ, start_response):
         pin = Pin.get_from(self)
         if not pin:
-            return self.__wrapped__(environ, start_response)
+            return super(TracedPylonsApp, self).__call__(environ, start_response)
 
         with pin.tracer.trace("pylons.request") as span:
             span.service = pin.service
             span.span_type = http.TYPE
 
             if not span.sampled:
-                return self.__wrapped__(environ, start_response)
+                return super(TracedPylonsApp, self).__call__(environ, start_response)
 
             # tentative on status code, otherwise will be caught by except below
             def _start_response(status, *args, **kwargs):
@@ -51,7 +50,7 @@ class TracedPylonsApp(wrapt.ObjectProxy):
                 return start_response(status, *args, **kwargs)
 
             try:
-                return self.__wrapped__(environ, _start_response)
+                return super(TracedPylonsApp, self).__call__(environ, _start_response)
             except Exception as e:
                 # "unexpected errors"
                 # exc_info set by __exit__ on current tracer
